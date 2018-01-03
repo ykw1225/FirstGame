@@ -1,0 +1,167 @@
+<html>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+
+	const CANVASWIDTH = 800;
+	const CANVASHEIGHT = 600;
+	const GAP = 5;
+	const FPS = 60;
+	const FRAMS = 60;
+	const BALLRADIUS = 10;
+	const PADDLEWIDTH = 20;
+	const PADDLEHEIGHT = 100;
+	const AISPEEDRATE = 1.5;
+	const P1SCOREX = 50;
+	const P1SCOREY = 100;
+	const P2SCOREX = CANVASWIDTH-300;
+	const P2SCOREY = 100;
+
+	var canvas;
+	var canvasContext;
+	var ballX = CANVASWIDTH/2;
+	var ballY = CANVASHEIGHT/2;
+	var ballSpeedX = negRandom(1);
+	var ballSpeedY = negRandom(1);
+	var paddleOneX = GAP;
+	var paddleOneY = (CANVASHEIGHT-PADDLEHEIGHT)/2;
+	var paddleTwoX = CANVASWIDTH-GAP-PADDLEWIDTH;
+	var paddleTwoY = (CANVASHEIGHT-PADDLEHEIGHT)/2;
+	var p1 = 0;
+	var p2 = 0;
+	var aiSpeed = 0.001;
+	var winScore = 1;
+	var showWinScreen = false;
+	var delta = 0.01;
+
+	window.onload = function(){
+		canvas = document.getElementById('gameCanvas');
+		canvasContext = canvas.getContext('2d');
+		setInterval(function(){drawAll();drawNet();moveAll();ifWin();}, FRAMS/FPS);
+		canvas.addEventListener('mousedown', function(evt){resetAll();});
+		canvas.addEventListener('mousemove',
+			function(evt){
+				var mousePos = calculateMousePos(evt);
+				paddleOneY = mousePos.y-(PADDLEHEIGHT/2);
+			});
+	}
+
+	function resetAll(){
+		showWinScreen = false;
+		aiSpeed = 0.001;
+		p1 = p2 = 0;
+		ballSpeedX = negRandom(1);
+		ballSpeedY = negRandom(1);
+		ballX = CANVASWIDTH/2;
+		ballY = CANVASHEIGHT/2;
+	}
+
+	function ifWin(){
+		if(showWinScreen){
+			drawAll();
+			canvasContext.fillStyle = 'white';
+			canvasContext.font = '50px serif';
+			canvasContext.fillText("Your Score: " + p1, 200, 300);
+			canvasContext.font = '30px serif';
+			canvasContext.fillText("Click to Continue", 200, 500);
+			aiSpeed = ballSpeedX = ballSpeedY = ballX = ballY = 0;
+			return;
+		}
+	}
+
+	function negRandom(n){
+		for(var i=0; i<Math.floor(Math.random()*(10+1)); i++){
+			n=-n;
+		}
+		return n;
+	}
+
+	function calculateMousePos(evt){
+		var rect = canvas.getBoundingClientRect();
+		var root = document.documentElement;
+		var mouseX = evt.clientX - rect.left - root.scrollLeft;
+		var mouseY = evt.clientY - rect.top - root.scrollTop;
+		return{ x:mouseX, y:mouseY };
+	}
+
+	function AI(){
+		var center = paddleTwoY + (PADDLEHEIGHT/2);
+		if(center < ballY) paddleTwoY *= 1+aiSpeed;
+		else paddleTwoY *= 1-aiSpeed;
+	}
+
+	function ballReset(){
+		ballSpeedX = -ballSpeedX;
+		if(ballSpeedY<0) ballSpeedY = -ballSpeedY/ballSpeedY;
+		else ballSpeedY = ballSpeedY/ballSpeedY;
+		ballX = CANVASWIDTH/2;
+		ballY = CANVASHEIGHT/2;
+	}
+
+	function moveAll(){
+
+		AI();
+		ballX += ballSpeedX;
+		ballY += ballSpeedY;
+
+		if(ballX == CANVASWIDTH-PADDLEWIDTH-GAP-BALLRADIUS){
+			if(ballY >= paddleTwoY && ballY <= paddleTwoY+PADDLEHEIGHT){
+				ballSpeedX = -ballSpeedX;
+				var deltaY = ballY - (paddleTwoY + PADDLEHEIGHT/2);
+				ballSpeedY = deltaY * delta;
+			}
+		}
+		if(ballX > CANVASWIDTH+BALLRADIUS+GAP){
+			p1++;
+			aiSpeed *= AISPEEDRATE;
+			delta *= AISPEEDRATE;
+			if(p2 == winScore) showWinScreen = !showWinScreen;
+			ballReset();
+		}
+		if(ballX == PADDLEWIDTH+GAP+BALLRADIUS){
+			if(ballY >= paddleOneY && ballY <= paddleOneY+PADDLEHEIGHT){
+				ballSpeedX = -ballSpeedX;
+				var deltaY = ballY - (paddleOneY + PADDLEHEIGHT/2);
+				ballSpeedY = deltaY * delta;
+			}
+		}
+		if(ballX < -BALLRADIUS-GAP){
+			p2++;
+			if(p2 == winScore) showWinScreen = !showWinScreen;;
+			ballReset();
+		}
+		if(ballY > CANVASHEIGHT-BALLRADIUS) ballSpeedY = -ballSpeedY;
+		if(ballY < BALLRADIUS) ballSpeedY = -ballSpeedY;
+	}
+
+	function drawAll(){
+		colorRect(0, 0, canvas.width, canvas.height, 'black');
+		colorRect(paddleOneX, paddleOneY, PADDLEWIDTH, PADDLEHEIGHT, 'white');
+		colorRect(paddleTwoX, paddleTwoY, PADDLEWIDTH, PADDLEHEIGHT, 'white');
+		colorCirc(ballX, ballY, BALLRADIUS, 'white');
+		canvasContext.font = '30px serif';
+		canvasContext.fillText("Score: " + p1, P1SCOREX, P1SCOREY);
+		// canvasContext.fillText("AI Speed: " + aiSpeed, P2SCOREX, P2SCOREY);
+	}
+
+	function colorRect(x, y, w, h, c){
+		canvasContext.fillStyle = c;
+		canvasContext.fillRect(x, y, w, h);
+	}
+
+	function colorCirc(x, y, r, c){
+		canvasContext.fillStyle = c;
+		canvasContext.beginPath();
+		canvasContext.arc(x, y, r, 0, Math.PI*2, true);
+		canvasContext.fill();
+	}
+
+	function drawNet(){
+		for(var i=0; i<CANVASHEIGHT; i+=40){
+			colorRect(CANVASWIDTH/2-1,i,2,20,'white');
+		}
+	}
+
+</script>
+
+</html>
